@@ -3,9 +3,6 @@ using System.Collections;
 using DG.Tweening;
 using UnityEngine.UI;
 using System.IO;
-using UnityEngine.Networking;
-using UnityEngine.SceneManagement;
-//using LitJson;
 using System.Linq;
 using TMPro;
 
@@ -15,6 +12,7 @@ public class Manager : MonoBehaviour
     [System.NonSerialized] Texture2D loadedLocalImage;
     [SerializeField] Image backgroundImage;
     public AdminPanel adminPanel;
+    public GameObject startButtonParent;
 
     [SerializeField] TMP_Text timerText;
     private int timeAmount = 60;
@@ -25,31 +23,83 @@ public class Manager : MonoBehaviour
     {        
         CheckIfAnyBGPhoto();
         timerVar = timeAmount;
-        timerText.text = timerVar.ToString();
+        timerText.text = timerVar.ToString() + " Seconds";
     }
     void Update()
     {
-        
+        if(Input.GetKeyDown(KeyCode.Backspace))
+        {
+            StopTimer();
+        }
+    }
+    
+
+    public void ShowTimeUp(int lastTime)
+    {
+        timerText.text = lastTime.ToString("D2") + "\nTime up!";
+    }
+
+    public void StopTimer()
+    {
+        goTimerGo = false;
+        StopCoroutine(CountDown());
+        StopCoroutine(CountUp());
+        timerVar = timeAmount;
+        timerText.text = timerVar.ToString() + " Seconds";
+        startButtonParent.SetActive(true);
     }
 
     public void StartCountDown()
     {
-        timerVar = timeAmount;
+        timerVar = timeAmount+1;
+        startButtonParent.SetActive(false);
+        goTimerGo = true;
         StartCoroutine(CountDown());
     }
     IEnumerator CountDown()
     {
         yield return new WaitForSeconds(1);
         timerVar--;
-        timerText.text = ConvertSecondToTime(timerVar);
-        if(!goTimerGo || timerVar == 0)
+        if(goTimerGo && timerVar > 0)
         {
+            timerText.text = ConvertSecondToTime(timerVar);
+            AnimateTimerText();
+            StartCoroutine(CountDown());
+        }        
+        else if(timerVar == 0)
+        {
+            timerText.text = "00";
+            goTimerGo = false;
             StopCoroutine(CountDown());
             timerVar = timeAmount;
+            ShowTimeUp(0);
         }
-        else
+    }
+
+    public void StartCountUp()
+    {
+        timerVar = -1;
+        startButtonParent.SetActive(false);
+        goTimerGo = true;
+        StartCoroutine(CountUp());
+    }
+    IEnumerator CountUp()
+    {
+        yield return new WaitForSeconds(1);
+        timerVar++;
+        if(goTimerGo && timerVar < timeAmount)
         {
-            StartCoroutine(CountDown());
+            timerText.text = ConvertSecondToTime(timerVar);
+            AnimateTimerText();
+            StartCoroutine(CountUp());
+        }
+        else if (timerVar == timeAmount)
+        {
+            timerText.text = timeAmount.ToString();            
+            goTimerGo = false;
+            StopCoroutine(CountUp());
+            timerVar = timeAmount;
+            ShowTimeUp(timeAmount);
         }
     }
 
@@ -60,17 +110,20 @@ public class Manager : MonoBehaviour
         hour = time / 3600;        
         if(hour>0)
         {
-            retString += hour.ToString() + ":";
+            retString += hour.ToString("D2") + ":";
             time = time % 3600;
         }
         minute = time / 60;        
-        if(minute>0)
-        {
-            retString += minute.ToString() + ":";
-            time = time % 60;
-        }            
+        //if(minute>0 || hour >0)
+        //{
+        //    retString += minute.ToString("D2") + ":";
+        //    time = time % 60;
+        //}
+        retString += minute.ToString("D2") + ":";
+        time = time % 60;
+
         second = time;
-        retString += minute.ToString();
+        retString += second.ToString("D2");
         return retString;
     }
 
@@ -79,6 +132,8 @@ public class Manager : MonoBehaviour
         if(adminPanel.timeAmount.text != null)
         {
             timeAmount = int.Parse(adminPanel.timeAmount.text);
+            timerVar = timeAmount; 
+            timerText.text = timerVar.ToString() + " Seconds";
         }
     }
 
@@ -115,5 +170,12 @@ public class Manager : MonoBehaviour
             backgroundImage.preserveAspect = true;
 
         }
+    }
+
+    public void AnimateTimerText()
+    {
+        Sequence sequence = DOTween.Sequence();
+        sequence.Append(timerText.transform.DOScale(1.25f, 0.25f));
+        sequence.Append(timerText.transform.DOScale(1.00f, 0.25f));
     }
 }
