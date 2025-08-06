@@ -7,6 +7,7 @@ using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 //using LitJson;
 using System.Linq;
+using TMPro;
 
 public class Manager : MonoBehaviour
 {
@@ -15,17 +16,63 @@ public class Manager : MonoBehaviour
     [SerializeField] Image backgroundImage;
     public AdminPanel adminPanel;
 
+    [SerializeField] TMP_Text timerText;
     private int timeAmount = 60;
+    private int timerVar;
+
+    bool goTimerGo = true;
     void Start()
-    {
+    {        
         CheckIfAnyBGPhoto();
+        timerVar = timeAmount;
+        timerText.text = timerVar.ToString();
     }
     void Update()
     {
         
     }
 
+    public void StartCountDown()
+    {
+        timerVar = timeAmount;
+        StartCoroutine(CountDown());
+    }
+    IEnumerator CountDown()
+    {
+        yield return new WaitForSeconds(1);
+        timerVar--;
+        timerText.text = ConvertSecondToTime(timerVar);
+        if(!goTimerGo || timerVar == 0)
+        {
+            StopCoroutine(CountDown());
+            timerVar = timeAmount;
+        }
+        else
+        {
+            StartCoroutine(CountDown());
+        }
+    }
 
+    private string ConvertSecondToTime(int time)
+    {
+        int hour, minute, second;
+        string retString = "";
+        hour = time / 3600;        
+        if(hour>0)
+        {
+            retString += hour.ToString() + ":";
+            time = time % 3600;
+        }
+        minute = time / 60;        
+        if(minute>0)
+        {
+            retString += minute.ToString() + ":";
+            time = time % 60;
+        }            
+        second = time;
+        retString += minute.ToString();
+        return retString;
+    }
 
     public void SetTimeAmountFromAdmin()
     {
@@ -58,6 +105,7 @@ public class Manager : MonoBehaviour
         }
         else
         {
+            backgroundImage.gameObject.SetActive(true);
             byte[] bytes = File.ReadAllBytes(latestFile);
             loadedLocalImage = new Texture2D(2, 2);
             loadedLocalImage.LoadImage(bytes);
